@@ -1,7 +1,8 @@
 import sys
 
 from PyQt5 import uic  # Импортируем uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QCheckBox, QLabel
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QCheckBox, QLabel, QPushButton
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget
 import sqlite3
@@ -294,10 +295,8 @@ class ShopeMeteorits(QMainWindow):
 
 class Check(QWidget):
     def __init__(self):
-        # Надо не забыть вызвать инициализатор базового класса
-        super().__init__()
-        # В метод initUI() будем выносить всю настройку интерфейса
-        # чтобы не перегружать инициализатор
+        super().__init__()  # инициализатор базового класса
+        # В метод initUI() будем выносить всю настройку интерфейса  чтобы не перегружать инициализатор
         self.initUI()
         global spisok
 
@@ -315,14 +314,63 @@ class Check(QWidget):
                 self.chB.clicked.connect(self.send2)
                 y += 30
             self.label = QLabel(self)
+            self.label.setFont(QFont('Arial', 12))
             self.label.setText(f"Итого: {sum}")
             self.label.move(x, y)
-            print(sum)
+            self.btn = QPushButton('Оплатить', self)
+            self.btn.resize(200, 50)
+            self.btn.move(200, 350)
+            self.btn.clicked.connect(self.gotopay)
         except Exception as e:
             print(e)
 
     def send2(self):
         n = QWidget.sender(self)
+
+    def gotopay(self):
+        try:
+            self.pay = PayForm()
+            self.pay.show()
+            self.close()
+        except Exception as e:
+            print(e)
+
+
+class PayForm(QMainWindow):
+    def __init__(self):
+        super(PayForm, self).__init__()
+        uic.loadUi('pay.ui', self)
+        self.payButton.clicked.connect(self.process_data)
+
+    def get_data(self):
+        card_num = self.lineEditcardNumbers.text()
+        if card_num.isdigit() and len(card_num) == 16:
+            return card_num
+        else:
+            return 404
+
+    def double(self, x):
+        res = x * 2
+        if res > 9:
+            res = res - 9
+        return res
+
+    def luhn_algorithm(self, card):
+        odd = map(lambda x: self.double(int(x)), card[::2])
+        even = map(int, card[1::2])
+        return (sum(odd) + sum(even)) % 10 == 0
+
+    def process_data(self):
+        number = self.get_data()
+        if number == 404:
+            self.errorLabel.setText(
+                "Введите только 16 цифр. Допускаются пробелы")
+        elif self.luhn_algorithm(number):
+            self.errorLabel.setText(
+                "Ваша карта обрабатывается...Оплата прошла успешно")
+        else:
+            self.errorLabel.setText(
+                "Номер недействителен. Попробуйте снова.")
 
 
 if __name__ == '__main__':
